@@ -30,6 +30,10 @@ colPath = tk.StringVar()
 
 remDupes = tk.IntVar()
 
+keepDupes = tk.IntVar()
+
+fDupe = tk.IntVar()
+
 dupeNames = []
 
 #setting the window title
@@ -108,11 +112,24 @@ def excelCollate( dupeNames ):
       idf = idf.append( f )
 
     if (remDupes.get() == 1):
-      idf = idf.drop_duplicates(subset= dupeNames, keep='first')
+      if( keepDupes.get() == 1):
+        edf = idf
+        edf = edf[edf.duplicated(keep=False)]
+      if( fDupe.get == 1):
+      
+        idf = idf.drop_duplicates(subset= dupeNames, keep='first')
+      else:
+        idf = idf.drop_duplicates(subset= dupeNames, keep='last')
     
     #store the same data in a new dataframe, but sort for column order
     df = pd.DataFrame( idf, columns=cols )
 
+    ddf = pd.DataFrame( edf, columns=cols )
+    dupepath = opath
+    if dupepath.endswith('.xlsx'):
+      dupepath = dupepath[:-5]
+    dupepath = dupepath + '_dupes.xlsx'
+    
     #using a Pandas excel writer to write the finished file
     writer = pd.ExcelWriter(opath)
 
@@ -120,7 +137,17 @@ def excelCollate( dupeNames ):
 
     writer.save()
     
-    successMessage()
+    dwriter = pd.ExcelWriter(dupepath)
+    
+    ddf.to_excel(dwriter)
+    
+    dwriter.save()
+    
+    if( keepDupes.get() == 1 ):
+      dsuccessMessage(dupepath)
+      
+    else:
+      successMessage()
 
   else:
     dirError()
@@ -170,7 +197,7 @@ def getDupeNames():
     fileError()
   
 dupeButton = tk.Button(root, text="Select Duplicate Criteria Columns", command=getDupeNames )
-dupeButton.grid(row=4, column=1)
+dupeButton.grid(row=6, column=0)
   
 
 #tk Message for the program name and main message
@@ -270,6 +297,10 @@ def successMessage():
   #messagebox with success message
   mb.showinfo(title='Success!', message='Successfully wrote file at ' + outPath.get())
   
+def dsuccessMessage( dupepath ):
+  #messagebox with success message
+  mb.showinfo(title='Success!', message='Successfully wrote file at ' + outPath.get() + '\nSuccessfully wrote duplicates at ' + dupepath )
+  
 def colMessage():
   #messagebox with success message
   mb.showinfo(title='Success!', message='Column Names Saved')
@@ -285,12 +316,21 @@ def fileError():
  
 #button to activate the collate script 
 sbut = tk.Button(root, text='Submit', command=select)
-sbut.grid(row=5, column=1)
+sbut.grid(row=6, column=1)
 
 
 #checkbox for choosing whether to remove duplicates
 dCheck = tk.Checkbutton(root, text="Remove Duplicates?", variable = remDupes)
 dCheck.grid(row=4, column=0)
 
+#checkbox for choosing whether to remove duplicates
+dFileCheck = tk.Checkbutton(root, text="Duplicates to New File?", variable = keepDupes)
+dFileCheck.grid(row=4, column=1)
+
+#radio button for choosing whether to use default column name selection or user-specified file
+dupeFRButton = tk.Radiobutton(root, text = "Keep First Encountered Duplicate", variable=fDupe, value=0)
+dupeFRButton.grid(row=5, column=0)
+dupeLRButton = tk.Radiobutton(root, text = "Keep Last Encountered Duplicate", variable=fDupe, value=1)
+dupeLRButton.grid(row=5, column=1)
 
 root.mainloop()
